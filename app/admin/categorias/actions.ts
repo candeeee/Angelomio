@@ -9,8 +9,9 @@ import * as categoriesService from "@/lib/services/categories";
 //   AdminCategoriesClient ("use client") → actions.ts ("use server")
 //   → services/categories.ts → Supabase
 //
-// Revalida /admin/categorias y también /productos y / (Home), porque
-// ambas leen categorías reales y deben reflejar el cambio.
+// Toda mutación de categorías invalida el árbol completo desde la raíz
+// (ver revalidateCategoryPaths más abajo): el header las lee en el
+// layout raíz, así que no alcanza con invalidar páginas sueltas.
 // ─────────────────────────────────────────────────────────────
 
 export interface CategoryFormInput {
@@ -21,9 +22,16 @@ export interface CategoryFormInput {
 }
 
 function revalidateCategoryPaths() {
-  revalidatePath("/admin/categorias");
-  revalidatePath("/productos");
-  revalidatePath("/");
+  // "layout" es imprescindible acá: las categorías se leen en
+  // app/layout.tsx (header y menú mobile), que es el layout raíz
+  // compartido por todo el sitio. Invalidando sólo `/` y `/productos`,
+  // el header de cualquier otra ruta seguía mostrando la lista vieja
+  // hasta que venciera el `revalidate` de 60 segundos.
+  //
+  // Con "layout", crear, renombrar, reordenar o eliminar una categoría
+  // se refleja inmediatamente en el header, el menú mobile, los filtros
+  // del catálogo y la home.
+  revalidatePath("/", "layout");
 }
 
 export async function createCategoryAction(input: CategoryFormInput) {

@@ -42,6 +42,12 @@ interface ProductFiltersProps {
   filters: FiltersState;
   onChange: (next: FiltersState) => void;
   onReset: () => void;
+  /**
+   * El drawer mobile tiene su propio botón "Limpiar" en la barra
+   * inferior fija; ahí este link duplicado sobra y obliga a scrollear
+   * hasta el final para encontrarlo.
+   */
+  showResetButton?: boolean;
 }
 
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
@@ -65,6 +71,7 @@ export default function ProductFilters({
   filters,
   onChange,
   onReset,
+  showResetButton = true,
 }: ProductFiltersProps) {
   const hasActiveFilters =
     filters.category !== null ||
@@ -83,7 +90,7 @@ export default function ProductFilters({
             <button
               onClick={() => onChange({ ...filters, category: null })}
               className={cn(
-                "text-left text-sm transition-colors",
+                "flex min-h-[36px] w-full items-center text-left text-sm transition-colors",
                 filters.category === null ? "text-ink underline" : "text-warmgray-500 hover:text-ink"
               )}
             >
@@ -95,7 +102,7 @@ export default function ProductFilters({
               <button
                 onClick={() => onChange({ ...filters, category: c.slug })}
                 className={cn(
-                  "text-left text-sm transition-colors",
+                  "flex min-h-[36px] w-full items-center text-left text-sm transition-colors",
                   filters.category === c.slug
                     ? "text-ink underline"
                     : "text-warmgray-500 hover:text-ink"
@@ -119,7 +126,7 @@ export default function ProductFilters({
                   aria-pressed={active}
                   onClick={() => onChange({ ...filters, sizes: toggle(filters.sizes, size) })}
                   className={cn(
-                    "min-w-[44px] border px-3 py-2 text-[11px] uppercase tracking-wider transition-colors",
+                    "min-h-[44px] min-w-[48px] border px-3 text-[11px] uppercase tracking-wider transition-colors",
                     active
                       ? "border-ink bg-ink text-cream"
                       : "border-warmgray-200 text-warmgray-600 hover:border-ink hover:text-ink"
@@ -144,7 +151,7 @@ export default function ProductFilters({
                   aria-pressed={active}
                   onClick={() => onChange({ ...filters, colors: toggle(filters.colors, color) })}
                   className={cn(
-                    "border px-3 py-2 text-[11px] uppercase tracking-wider transition-colors",
+                    "min-h-[44px] border px-3 text-[11px] uppercase tracking-wider transition-colors",
                     active
                       ? "border-ink bg-ink text-cream"
                       : "border-warmgray-200 text-warmgray-600 hover:border-ink hover:text-ink"
@@ -183,7 +190,7 @@ export default function ProductFilters({
         </FilterGroup>
       )}
 
-      {hasActiveFilters && (
+      {showResetButton && hasActiveFilters && (
         <div className="border-t border-warmgray-100 pt-6">
           <button
             onClick={onReset}

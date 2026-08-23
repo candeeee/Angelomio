@@ -35,11 +35,11 @@ export default async function Footer() {
 
   return (
     <footer className="border-t border-warmgray-100 bg-cream">
-      <div className="container-app py-14 sm:py-16">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="container-app py-12 pb-[max(3rem,env(safe-area-inset-bottom))] sm:py-16">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-12 lg:grid-cols-4">
           {/* Marca */}
           <div className="lg:col-span-2">
-            <p className="brand-wordmark text-lg">{wordmark}</p>
+            <p className="brand-wordmark break-words text-base sm:text-lg">{wordmark}</p>
             <p className="mt-3 text-sm text-warmgray-500">{BRAND_TAGLINE}</p>
 
             <div className="mt-8 space-y-2.5 text-sm text-warmgray-500">
@@ -57,10 +57,10 @@ export default async function Footer() {
           {/* Ayuda */}
           <div>
             <p className="eyebrow mb-5">Ayuda</p>
-            <ul className="space-y-3">
+            <ul className="space-y-1">
               {helpLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="link-quiet text-sm text-warmgray-600">
+                  <Link href={link.href} className="link-quiet inline-flex min-h-[36px] items-center text-sm text-warmgray-600">
                     {link.label}
                   </Link>
                 </li>
@@ -71,14 +71,14 @@ export default async function Footer() {
           {/* Redes */}
           <div>
             <p className="eyebrow mb-5">Seguinos</p>
-            <ul className="space-y-3">
+            <ul className="space-y-1">
               {storeSettings.instagram && (
                 <li>
                   <a
                     href={storeSettings.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="link-quiet inline-flex items-center gap-2 text-sm text-warmgray-600"
+                    className="link-quiet inline-flex min-h-[36px] items-center gap-2 text-sm text-warmgray-600"
                   >
                     <Instagram size={15} strokeWidth={1.5} /> Instagram
                   </a>
@@ -90,7 +90,7 @@ export default async function Footer() {
                     href={whatsappHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="link-quiet inline-flex items-center gap-2 text-sm text-warmgray-600"
+                    className="link-quiet inline-flex min-h-[36px] items-center gap-2 text-sm text-warmgray-600"
                   >
                     <MessageCircle size={15} strokeWidth={1.5} /> WhatsApp
                   </a>
@@ -102,7 +102,7 @@ export default async function Footer() {
                     href={storeSettings.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="link-quiet inline-flex items-center gap-2 text-sm text-warmgray-600"
+                    className="link-quiet inline-flex min-h-[36px] items-center gap-2 text-sm text-warmgray-600"
                   >
                     <Facebook size={15} strokeWidth={1.5} /> Facebook
                   </a>

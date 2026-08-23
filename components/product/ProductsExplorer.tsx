@@ -9,6 +9,7 @@ import ProductFilters, {
   type FiltersState,
   type SortOption,
 } from "@/components/product/ProductFilters";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 interface ProductsExplorerProps {
   products: Product[];
@@ -28,16 +29,19 @@ const EMPTY_FILTERS: FiltersState = {
 // ─────────────────────────────────────────────────────────────
 // Catálogo.
 //
-// El filtrado sigue siendo 100% en cliente sobre la lista que ya trae
-// el Server Component: es una sola consulta y el catálogo de una marca
-// de indumentaria entra cómodo en memoria. Cuando el volumen lo pida,
-// el cambio es mover este `useMemo` a la query de Supabase — la UI no
-// se entera.
+// El filtrado es 100% en cliente sobre la lista que ya trae el Server
+// Component: es una sola consulta y el catálogo de una marca de
+// indumentaria entra cómodo en memoria. Cuando el volumen lo pida, el
+// cambio es mover este `useMemo` a la query de Supabase.
 //
-// Layout: sidebar de filtros a la izquierda en escritorio y drawer a
-// pantalla completa en mobile. El mobile no es el desktop "adaptado":
-// los filtros no ocupan lugar hasta que se piden, y la grilla arranca
-// en dos columnas desde el borde de la pantalla.
+// Layout: sidebar de filtros a la izquierda desde 1024px y drawer
+// inferior en mobile. El mobile no es el desktop "adaptado": los
+// filtros no ocupan lugar hasta que se piden y la grilla arranca en dos
+// columnas.
+//
+// Las categorías, los talles y los colores salen SIEMPRE de los datos
+// reales — las categorías de Supabase y las opciones de variantes de
+// los productos publicados. No hay ninguna lista fija.
 // ─────────────────────────────────────────────────────────────
 export default function ProductsExplorer({
   products,
@@ -52,11 +56,13 @@ export default function ProductsExplorer({
   const [sort, setSort] = useState<SortOption>("featured");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  useBodyScrollLock(drawerOpen);
+
   const search = initialSearch.trim();
 
-  // Opciones disponibles: se derivan del catálogo real, no de una lista
-  // fija. Se calculan sobre TODOS los productos (no sobre el resultado
-  // filtrado) para que las opciones no desaparezcan mientras se filtra.
+  // Opciones disponibles: derivadas del catálogo real. Se calculan sobre
+  // TODOS los productos (no sobre el resultado filtrado) para que las
+  // opciones no desaparezcan mientras se filtra.
   const availableSizes = useMemo(
     () =>
       Array.from(
@@ -90,13 +96,16 @@ export default function ProductsExplorer({
 
   const finalList = useMemo(() => {
     // `products` ya viene filtrado a status='active' desde
-    // getPublicProducts() (Server Component padre) — no se re-filtra
-    // acá para no duplicar esa lógica en dos lugares.
+    // getPublicProducts() — no se re-filtra acá.
     let list = products;
 
     if (filters.category) {
       const categoryId = categories.find((c) => c.slug === filters.category)?.id;
-      list = list.filter((p) => p.categoryId === categoryId);
+      // Si el slug de la URL ya no corresponde a ninguna categoría
+      // (porque se eliminó desde el panel), no se filtra por un id
+      // inexistente: se muestra el catálogo completo en vez de una
+      // pantalla vacía sin explicación.
+      if (categoryId) list = list.filter((p) => p.categoryId === categoryId);
     }
 
     if (search) {
@@ -107,9 +116,7 @@ export default function ProductsExplorer({
     }
 
     if (filters.sizes.length > 0) {
-      list = list.filter((p) =>
-        p.variants.some((v) => v.size && filters.sizes.includes(v.size))
-      );
+      list = list.filter((p) => p.variants.some((v) => v.size && filters.sizes.includes(v.size)));
     }
 
     if (filters.colors.length > 0) {
@@ -163,33 +170,44 @@ export default function ProductsExplorer({
       filters={filters}
       onChange={setFilters}
       onReset={() => setFilters(EMPTY_FILTERS)}
+      showResetButton={false}
     />
   );
 
   return (
-    <div className="container-app py-10 sm:py-16">
-      <header className="mb-10 border-b border-warmgray-100 pb-8">
+    <div className="container-app py-8 sm:py-12 lg:py-16">
+      <header className="mb-8 border-b border-warmgray-100 pb-6 sm:mb-10 sm:pb-8">
         <h1 className="title-editorial">{heading}</h1>
-        {subheading && <p className="mt-3 text-sm text-warmgray-500">{subheading}</p>}
+        {subheading && <p className="mt-2 text-sm text-warmgray-500 sm:mt-3">{subheading}</p>}
       </header>
 
       <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-14">
-        {/* Sidebar de filtros — escritorio */}
+        {/* Sidebar de filtros — desde 1024px */}
         <aside className="hidden lg:block">
-          <div className="sticky top-28">{filtersPanel}</div>
+          <div className="sticky top-28">
+            {filtersPanel}
+            {activeFilterCount > 0 && (
+              <button
+                onClick={() => setFilters(EMPTY_FILTERS)}
+                className="link-quiet mt-6 border-t border-warmgray-100 pt-6 text-[10px] uppercase tracking-editorial text-warmgray-600"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
         </aside>
 
         <div>
-          {/* Barra de control: cantidad, filtros (mobile) y orden */}
-          <div className="mb-8 flex items-center justify-between gap-4">
-            <p className="text-xs text-warmgray-500">
+          {/* Barra de control */}
+          <div className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
+            <p className="shrink-0 text-xs text-warmgray-500">
               {finalList.length} {finalList.length === 1 ? "producto" : "productos"}
             </p>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setDrawerOpen(true)}
-                className="inline-flex items-center gap-2 border border-warmgray-200 px-4 py-2 text-[10px] uppercase tracking-editorial text-ink lg:hidden"
+                className="inline-flex min-h-[40px] items-center gap-2 border border-warmgray-200 px-3 text-[10px] uppercase tracking-editorial text-ink sm:px-4 lg:hidden"
               >
                 <SlidersHorizontal size={14} strokeWidth={1.5} />
                 Filtrar
@@ -203,7 +221,7 @@ export default function ProductsExplorer({
                 id="sort"
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
-                className="border border-warmgray-200 bg-white px-3 py-2 text-[10px] uppercase tracking-editorial text-ink outline-none focus:border-ink"
+                className="min-h-[40px] max-w-[160px] border border-warmgray-200 bg-white px-2 text-[10px] uppercase tracking-editorial text-ink outline-none focus:border-ink sm:max-w-none sm:px-3"
               >
                 {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
                   <option key={option} value={option}>
@@ -218,29 +236,49 @@ export default function ProductsExplorer({
         </div>
       </div>
 
-      {/* Drawer de filtros — mobile */}
+      {/* Drawer de filtros — mobile.
+          Está fuera de cualquier elemento con `backdrop-filter`, así que
+          `fixed` se resuelve contra el viewport (mismo cuidado que con
+          el menú del header). Bloquea el scroll del body mientras está
+          abierto y tiene botones explícitos de Aplicar y Limpiar. */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
-            onClick={() => setDrawerOpen(false)}
-          />
-          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-cream">
-            <div className="sticky top-0 flex items-center justify-between border-b border-warmgray-100 bg-cream px-5 py-4">
+        <div
+          className="fixed inset-0 z-50 lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filtros"
+        >
+          <div className="absolute inset-0 bg-ink/40" onClick={() => setDrawerOpen(false)} />
+
+          <div className="absolute inset-x-0 bottom-0 flex max-h-[88svh] flex-col bg-cream">
+            <div className="flex shrink-0 items-center justify-between border-b border-warmgray-100 px-5 py-4">
               <p className="text-[11px] uppercase tracking-editorial">Filtrar</p>
               <button
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Cerrar filtros"
-                className="rounded-sm p-1.5 text-warmgray-500 hover:text-ink"
+                className="-mr-2 rounded-sm p-2.5 text-warmgray-500 transition-colors hover:text-ink"
               >
                 <X size={20} strokeWidth={1.5} />
               </button>
             </div>
-            <div className="px-5 py-6">{filtersPanel}</div>
-            <div className="sticky bottom-0 border-t border-warmgray-100 bg-cream px-5 py-4">
-              <button onClick={() => setDrawerOpen(false)} className="btn-primary w-full">
-                Ver {finalList.length} {finalList.length === 1 ? "producto" : "productos"}
-              </button>
+
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-6">
+              {filtersPanel}
+            </div>
+
+            <div className="shrink-0 border-t border-warmgray-100 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setFilters(EMPTY_FILTERS)}
+                  disabled={activeFilterCount === 0}
+                  className="btn-secondary flex-1 disabled:border-warmgray-200 disabled:text-warmgray-400 disabled:hover:bg-transparent disabled:hover:text-warmgray-400"
+                >
+                  Limpiar
+                </button>
+                <button onClick={() => setDrawerOpen(false)} className="btn-primary flex-[1.6]">
+                  Aplicar ({finalList.length})
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -10,6 +10,25 @@ body {
   @apply bg-cream text-ink font-sans antialiased;
 }
 
+/* Ningún elemento debería empujar la página a lo ancho. En mobile un
+   solo desborde (una grilla, una imagen sin `max-width`, un texto
+   largo) genera scroll horizontal en TODO el sitio y descoloca el
+   header sticky. Esto es una red de seguridad, no un reemplazo de
+   arreglar la causa. */
+html,
+body {
+  @apply max-w-full overflow-x-hidden;
+}
+
+/* El header es sticky: sin esto, al navegar a un ancla (#categorias)
+   el título queda tapado detrás del header. Se acota a secciones y
+   titulares para no alterar el desplazamiento al enfocar un input. */
+section[id],
+h1[id],
+h2[id] {
+  scroll-margin-top: 5.5rem;
+}
+
 /* Titulares: display sans, peso liviano y tracking apretado. La
    personalidad editorial de Angelo Mio vive en el tamaño y el espacio
    en blanco, no en adornos tipográficos. */
@@ -93,10 +112,24 @@ h1, h2, h3, h4 {
 }
 
 /* Inputs del sitio y del panel: una sola definición. */
+/* text-base en mobile NO es un capricho de tamaño: Safari en iOS hace
+   zoom automático sobre cualquier input con fuente menor a 16px al
+   enfocarlo, y después no vuelve al zoom original. Eso rompía por
+   completo el login, el registro y el checkout desde el celular. */
 .field {
-  @apply w-full rounded-sm border border-warmgray-200 bg-white px-4 py-3 text-sm text-ink outline-none transition-colors duration-200 placeholder:text-warmgray-400 focus:border-ink;
+  @apply w-full rounded-sm border border-warmgray-200 bg-white px-4 py-3 text-base text-ink outline-none transition-colors duration-200 placeholder:text-warmgray-400 focus:border-ink sm:text-sm;
 }
 
 .field-label {
   @apply mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-warmgray-600;
+}
+
+/* Carrusel de fotos de producto en mobile: se desplaza con el dedo, sin
+   barra visible. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

@@ -38,16 +38,20 @@ export interface ProductFormInput {
 }
 
 function revalidateProductPaths(slug?: string) {
-  revalidatePath("/admin/productos");
-  revalidatePath("/productos");
-  // La Home también lista productos (destacados, novedades, ofertas) y
-  // FALTABA acá: era la causa de que el panel guardara bien en Supabase
-  // y la página principal siguiera mostrando el catálogo viejo. Se
-  // renderiza estática, así que sin esta línea nadie la invalidaba
-  // nunca. (`/admin` la agregamos porque el dashboard muestra stock
-  // bajo y destacados.)
-  revalidatePath("/");
-  revalidatePath("/admin");
+  // ¿Por qué `revalidatePath("/", "layout")` y no `revalidatePath("/")`?
+  //
+  // Con un solo argumento, Next invalida ÚNICAMENTE la página `/`. Pero
+  // el layout raíz (app/layout.tsx) también consulta Supabase: de ahí
+  // salen las categorías del header y del menú mobile. Ese layout lo
+  // comparten TODAS las rutas, así que invalidando sólo `/` el header
+  // de /productos, /contacto, /favoritos, etc. seguía cacheado con las
+  // categorías viejas hasta que venciera el `revalidate` de 60s.
+  //
+  // Con el segundo argumento "layout", la invalidación baja en cascada
+  // por todo el árbol desde la raíz: se rehacen el layout y todas las
+  // páginas. Es lo que hace que una categoría o un producto nuevo se
+  // vean al instante en todo el sitio.
+  revalidatePath("/", "layout");
   if (slug) revalidatePath(`/productos/${slug}`);
 }
 

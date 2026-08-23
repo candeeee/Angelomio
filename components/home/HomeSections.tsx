@@ -1,32 +1,37 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Truck, ShieldCheck, RefreshCw, MessageCircle, Instagram } from "lucide-react";
 import { Product, Category } from "@/lib/types";
 import ProductGrid from "@/components/product/ProductGrid";
+import Reveal from "@/components/ui/Reveal";
 import { BRAND_INSTAGRAM_HANDLE, BRAND_WORDMARK } from "@/lib/site";
 
 // ─────────────────────────────────────────────────────────────
 // Home Angelo Mio.
 //
-// TODO lo que se muestra son datos reales de Supabase:
-//  - Destacados     → productos con `featured = true` en el panel.
-//  - Nuevos ingresos→ los más recientes por `created_at`.
-//  - Categorías     → tabla `categories` (imagen propia, o la portada de
-//                     un producto de esa categoría como respaldo).
-//  - Editorial      → foto de un producto real (la elige la page).
-//  - Instagram      → ver la nota de la sección más abajo.
+// SERVER COMPONENT. Antes era "use client" únicamente por las
+// animaciones de framer-motion; al pasar a animaciones CSS
+// (components/ui/Reveal.tsx) dejó de necesitarlo. Los únicos límites
+// cliente que quedan en la home son ProductCard (carrito y favoritos).
 //
-// Si el admin todavía no cargó nada, cada sección simplemente no se
-// renderiza en vez de mostrar relleno inventado.
+// TODO lo que se muestra son datos reales de Supabase:
+//  - Categorías      → tabla `categories`, filtradas a las que TIENEN
+//                      productos publicados (la page hace ese cálculo).
+//  - Destacados      → productos con `featured = true`.
+//  - Nuevos ingresos → los más recientes por `created_at`.
+//  - Sale            → los que tienen `compare_at_price`.
+//  - Editorial       → foto de un producto real.
+//
+// No hay ninguna lista de categorías escrita en el código. Si el admin
+// crea "Buzos" y le carga un producto, aparece acá sola.
 // ─────────────────────────────────────────────────────────────
 
 export interface CategoryTile {
   category: Category;
-  /** Foto de la categoría (propia o heredada de un producto). */
+  /** Foto de la categoría: propia, o heredada de un producto suyo. */
   image: string | null;
+  /** Cuántos productos publicados tiene. Siempre ≥ 1: la page filtra. */
+  productCount: number;
 }
 
 interface HomeSectionsProps {
@@ -35,27 +40,10 @@ interface HomeSectionsProps {
   onSale: Product[];
   categories: Category[];
   categoryTiles: CategoryTile[];
-  /** Foto para el bloque editorial. La elige el Server Component. */
   collectionImage: string | null;
-  /** Fotos reales del catálogo para la tira inferior. */
   galleryImages: string[];
-  /** URL de Instagram cargada en la configuración de la tienda. */
   instagramUrl?: string;
-  /** Texto de envíos configurado en el panel, si existe. */
   shippingInfo?: string;
-}
-
-function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
 }
 
 function SectionHeading({
@@ -68,9 +56,9 @@ function SectionHeading({
   action?: { href: string; label: string };
 }) {
   return (
-    <div className="mb-10 flex items-end justify-between gap-6 border-b border-warmgray-100 pb-6">
-      <div>
-        {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
+    <div className="mb-8 flex items-end justify-between gap-4 border-b border-warmgray-100 pb-5 sm:mb-10 sm:pb-6">
+      <div className="min-w-0">
+        {eyebrow && <p className="eyebrow mb-2 sm:mb-3">{eyebrow}</p>}
         <h2 className="title-editorial">{title}</h2>
       </div>
       {action && (
@@ -109,10 +97,18 @@ export default function HomeSections({
 
   return (
     <>
-      {/* ── Categorías: bloques con fotografía ──────────────── */}
+      {/* ── Categorías ──────────────────────────────────────────
+          Grilla de 2 columnas en mobile y 4 desde 1024px. Se eligió
+          grilla y no scroll horizontal: en un carrusel la segunda mitad
+          de las categorías queda escondida sin ningún indicio, y acá
+          justamente el problema a resolver era que no se vieran.
+          Cada bloque entero es el área clickeable, no sólo el texto. */}
       {categoryTiles.length > 0 && (
-        <section id="categorias" className="container-app py-16 sm:py-24">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-4">
+        <section id="categorias" className="container-app py-12 sm:py-20 lg:py-24">
+          <Reveal>
+            <SectionHeading title="Categorías" action={{ href: "/productos", label: "Ver todo" }} />
+          </Reveal>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 lg:grid-cols-4">
             {categoryTiles.map(({ category, image }, i) => (
               <Reveal key={category.id} delay={(i % 4) * 0.06}>
                 <Link
@@ -131,7 +127,7 @@ export default function HomeSections({
                       />
                     )}
                   </div>
-                  <p className="mt-4 text-[11px] uppercase tracking-editorial text-ink">
+                  <p className="mt-3 text-[11px] uppercase tracking-editorial text-ink sm:mt-4">
                     {category.name}
                   </p>
                 </Link>
@@ -143,23 +139,21 @@ export default function HomeSections({
 
       {/* ── Selección Angelo Mio (destacados) ───────────────── */}
       {featured.length > 0 && (
-        <section className="container-app pb-16 sm:pb-24">
+        <section className="container-app pb-12 sm:pb-20 lg:pb-24">
           <Reveal>
             <SectionHeading
               title={`Selección ${BRAND_WORDMARK}`}
               action={{ href: "/productos", label: "Ver todos" }}
             />
           </Reveal>
-          <Reveal delay={0.05}>
-            <ProductGrid products={featured} categories={categories} showAddToCart />
-          </Reveal>
+          <ProductGrid products={featured} categories={categories} showAddToCart />
         </section>
       )}
 
       {/* ── Bloque editorial de marca ───────────────────────── */}
       <section className="border-y border-warmgray-100">
         <div className="grid grid-cols-1 lg:grid-cols-2">
-          <div className="relative h-[360px] bg-beige-100 sm:h-[480px] lg:h-[620px]">
+          <div className="relative aspect-[4/3] bg-beige-100 sm:aspect-[16/9] lg:aspect-auto lg:h-[620px]">
             {collectionImage && (
               <Image
                 src={collectionImage}
@@ -170,16 +164,16 @@ export default function HomeSections({
               />
             )}
           </div>
-          <div className="flex items-center bg-beige-50 px-8 py-16 sm:px-16 lg:py-0">
+          <div className="flex items-center bg-beige-50 px-6 py-14 sm:px-12 lg:px-16 lg:py-0">
             <Reveal>
-              <p className="eyebrow mb-6">Editorial</p>
-              <h2 className="brand-wordmark max-w-md text-2xl font-light sm:text-4xl">
+              <p className="eyebrow mb-5 sm:mb-6">Editorial</p>
+              <h2 className="brand-wordmark max-w-md text-xl font-light sm:text-3xl lg:text-4xl">
                 {BRAND_WORDMARK}
               </h2>
-              <p className="mt-6 max-w-sm text-lg font-light leading-relaxed text-warmgray-600 sm:text-xl">
+              <p className="mt-5 max-w-sm text-base font-light leading-relaxed text-warmgray-600 sm:mt-6 sm:text-xl">
                 Prendas para todos los días.
               </p>
-              <Link href="/productos" className="btn-primary mt-10">
+              <Link href="/productos" className="btn-primary mt-8 sm:mt-10">
                 Descubrir
               </Link>
             </Reveal>
@@ -189,74 +183,62 @@ export default function HomeSections({
 
       {/* ── Nuevos ingresos ─────────────────────────────────── */}
       {newest.length > 0 && (
-        <section className="container-app py-16 sm:py-24">
+        <section className="container-app py-12 sm:py-20 lg:py-24">
           <Reveal>
             <SectionHeading title="Nuevos ingresos" />
           </Reveal>
-          <Reveal delay={0.05}>
-            <ProductGrid products={newest} categories={categories} showAddToCart />
-          </Reveal>
-          <Reveal delay={0.1}>
-            <div className="mt-14 flex justify-center">
-              <Link href="/productos" className="btn-secondary">
-                Ver todo
-              </Link>
-            </div>
-          </Reveal>
+          <ProductGrid products={newest} categories={categories} showAddToCart />
+          <div className="mt-12 flex justify-center sm:mt-14">
+            <Link href="/productos" className="btn-secondary">
+              Ver todo
+            </Link>
+          </div>
         </section>
       )}
 
-      {/* ── Sale: solo si hay productos con precio anterior ─── */}
+      {/* ── Sale ────────────────────────────────────────────── */}
       {onSale.length > 0 && (
-        <section className="container-app pb-16 sm:pb-24">
+        <section className="container-app pb-12 sm:pb-20 lg:pb-24">
           <Reveal>
             <SectionHeading eyebrow="Precios rebajados" title="Sale" />
           </Reveal>
-          <Reveal delay={0.05}>
-            <ProductGrid products={onSale} categories={categories} />
-          </Reveal>
+          <ProductGrid products={onSale} categories={categories} />
         </section>
       )}
 
       {/* ── Beneficios ──────────────────────────────────────── */}
-      <section className="border-y border-warmgray-100 bg-beige-50 py-16">
+      <section className="border-y border-warmgray-100 bg-beige-50 py-12 sm:py-16">
         <div className="container-app">
-          <Reveal>
-            <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-              {benefits.map((b) => (
-                <div key={b.title}>
-                  <b.icon size={18} strokeWidth={1.25} className="mb-4 text-ink" />
-                  <h4 className="mb-2 text-[11px] uppercase tracking-editorial">{b.title}</h4>
-                  <p className="text-sm leading-relaxed text-warmgray-500">{b.desc}</p>
-                </div>
-              ))}
-            </div>
-          </Reveal>
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-4">
+            {benefits.map((b) => (
+              <div key={b.title}>
+                <b.icon size={18} strokeWidth={1.25} className="mb-3 text-ink sm:mb-4" />
+                <h3 className="mb-2 text-[11px] uppercase tracking-editorial">{b.title}</h3>
+                <p className="text-sm leading-relaxed text-warmgray-500">{b.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── Instagram ───────────────────────────────────────────
-          NOTA IMPORTANTE: el proyecto NO tiene integración con la API
-          de Instagram y no se inventó una. Esta tira usa fotografías
-          REALES del catálogo cargado en el panel y el botón lleva al
-          perfil configurado en `store_settings.instagram`. Si algún día
-          se conecta la Graph API, lo único que cambia es de dónde sale
-          `galleryImages`. La sección entera se oculta si no hay ni
-          fotos ni perfil cargado. */}
+          NO hay integración con la API de Instagram y no se inventó
+          una. Esta tira usa fotografías reales del catálogo y el botón
+          lleva al perfil configurado en `store_settings.instagram`. Si
+          algún día se conecta la Graph API, lo único que cambia es de
+          dónde sale `galleryImages`. */}
       {(galleryImages.length > 0 || instagramUrl) && (
-        <section className="container-app py-16 sm:py-24">
-          <Reveal>
-            <div className="mb-10 text-center">
-              <p className="eyebrow mb-3">Instagram</p>
-              <h2 className="title-editorial">{BRAND_INSTAGRAM_HANDLE}</h2>
-            </div>
-          </Reveal>
+        <section className="container-app py-12 sm:py-20 lg:py-24">
+          <div className="mb-8 text-center sm:mb-10">
+            <p className="eyebrow mb-2 sm:mb-3">Instagram</p>
+            <h2 className="title-editorial">{BRAND_INSTAGRAM_HANDLE}</h2>
+          </div>
 
           {galleryImages.length > 0 && (
-            <Reveal delay={0.05}>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-                {galleryImages.map((url, i) => (
-                  <div key={`${url}-${i}`} className="relative aspect-square overflow-hidden bg-beige-100">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+              {galleryImages.map((url, i) => (
+                <Reveal key={`${url}-${i}`} delay={(i % 4) * 0.06}>
+                  <div className="relative aspect-square overflow-hidden bg-beige-100">
                     <Image
                       src={url}
                       alt=""
@@ -264,27 +246,25 @@ export default function HomeSections({
                       fill
                       loading="lazy"
                       sizes="(max-width: 1024px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-[900ms] ease-out hover:scale-[1.03]"
+                      className="object-cover"
                     />
                   </div>
-                ))}
-              </div>
-            </Reveal>
+                </Reveal>
+              ))}
+            </div>
           )}
 
           {instagramUrl && (
-            <Reveal delay={0.1}>
-              <div className="mt-12 flex justify-center">
-                <a
-                  href={instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary"
-                >
-                  <Instagram size={14} strokeWidth={1.5} /> Seguirnos en Instagram
-                </a>
-              </div>
-            </Reveal>
+            <div className="mt-10 flex justify-center sm:mt-12">
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary"
+              >
+                <Instagram size={14} strokeWidth={1.5} /> Seguirnos en Instagram
+              </a>
+            </div>
           )}
         </section>
       )}

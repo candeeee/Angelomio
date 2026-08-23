@@ -253,6 +253,10 @@ npm run lint       # ESLint (eslint-config-next)
 npm run typecheck  # tsc --noEmit
 ```
 
+> La configuración de ESLint vive en `.eslintrc.json`. Sin ese archivo,
+> `npm run lint` abre un asistente interactivo en vez de correr, lo que
+> lo vuelve inútil en CI.
+
 ---
 
 ## Build
@@ -528,6 +532,12 @@ Cosas que están documentadas en el código y conviene tener presentes:
 8. **`archived_at` requiere la migración 003.** Si el borrado de un
    producto vendido falla, es porque falta esa columna.
 
+9. **Las categorías sin productos publicados no aparecen en el bloque
+   visual de la home**, pero sí en el header, en el menú mobile y en los
+   filtros del catálogo. Es intencional: mandar a alguien desde una foto
+   grande a un catálogo vacío es peor que no ofrecer esa entrada, pero
+   la navegación tiene que reflejar lo que existe en el panel.
+
 ---
 
 ## Migración Good Night Good Vibes → Angelo Mio
@@ -665,3 +675,49 @@ nada. Lo único que hará será agregar lo que faltaba
   borrarlos si tienen historial de ventas.
 - **Banner, WhatsApp e Instagram** en `/admin/configuracion`. El banner
   de stock de la marca anterior se limpia solo en la migración `008`.
+
+
+---
+
+## Notas de implementación: responsive y datos dinámicos
+
+Tres cosas que conviene no volver a romper.
+
+### 1. Nada con `position: fixed` puede vivir dentro del header
+
+El header usa `backdrop-blur-md`. Según la especificación de Filter
+Effects, cualquier valor de `filter` o `backdrop-filter` distinto de
+`none` convierte al elemento en **containing block** de sus
+descendientes `position: fixed`.
+
+Por eso el menú mobile está en `components/layout/MobileMenu.tsx` y se
+renderiza como **hermano** del `<header>`, no adentro. Si se vuelve a
+meter dentro, `fixed inset-0` deja de referirse al viewport y el panel
+se abre dentro de una franja de 64px: parece que "el menú no abre".
+
+Lo mismo vale para el drawer de filtros del catálogo y para el carrito.
+
+### 2. La visibilidad del contenido no depende de JavaScript
+
+`components/ui/Reveal.tsx` usa una animación **CSS**, no
+`whileInView` de framer-motion.
+
+La versión anterior arrancaba en `opacity: 0` y sólo se volvía visible
+cuando el IntersectionObserver disparaba, después de hidratar. Cualquier
+falla en esa cadena dejaba secciones enteras invisibles de forma
+permanente, con el HTML presente en el DOM. Con CSS, el contenido se
+muestra aunque JavaScript no llegue nunca.
+
+Efecto secundario: `Hero`, `HomeSections` y `ProductGrid` dejaron de
+necesitar `"use client"` y volvieron a ser Server Components.
+
+### 3. Invalidar caché con `revalidatePath("/", "layout")`
+
+El layout raíz consulta Supabase: de ahí salen las categorías del header
+y del menú mobile, y ese layout lo comparten **todas** las rutas.
+
+`revalidatePath("/")` invalida sólo la página `/`. Para que una
+categoría nueva aparezca en el header de `/productos`, `/contacto` o
+cualquier otra ruta hace falta el segundo argumento `"layout"`, que baja
+en cascada por todo el árbol. Es lo que usan las Server Actions de
+productos, categorías y configuración.

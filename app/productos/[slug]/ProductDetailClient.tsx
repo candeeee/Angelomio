@@ -125,7 +125,7 @@ export default function ProductDetailClient({
         {/* ── Galería ──────────────────────────────────────── */}
         <div>
           {/* Mobile: carrusel con scroll-snap */}
-          <div className="flex snap-x snap-mandatory overflow-x-auto lg:hidden">
+          <div className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto lg:hidden">
             {product.images.length > 0 ? (
               product.images.map((img, i) => (
                 <div

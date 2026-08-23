@@ -79,7 +79,11 @@ const config: Config = {
         },
       },
       animation: {
-        fadeUp: "fadeUp .6s ease forwards",
+        // `both` (y no `forwards`): con un `animation-delay`, sin
+        // `backwards` el elemento se ve opaco durante la espera y recién
+        // ahí salta a opacidad 0 — un parpadeo visible en las grillas
+        // escalonadas.
+        fadeUp: "fadeUp .6s ease both",
       },
     },
   },
