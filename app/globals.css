@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cream text-ink font-sans antialiased;
+}
+
+/* Titulares: display sans, peso liviano y tracking apretado. La
+   personalidad editorial de Angelo Mio vive en el tamaño y el espacio
+   en blanco, no en adornos tipográficos. */
+h1, h2, h3, h4 {
+  @apply font-display font-light tracking-tight;
+}
+
+::selection {
+  @apply bg-beige-200 text-ink;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-warmgray-200 rounded-full;
+}
+
+/* Foco visible y consistente: se ve solo con teclado, no al hacer
+   click. */
+:focus-visible {
+  @apply outline-none ring-1 ring-ink ring-offset-2 ring-offset-cream;
+}
+
+/* Respeta la preferencia del sistema: sin esto, todo el reveal al
+   scrollear es una molestia para quien pidió menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.container-app {
+  @apply mx-auto w-full max-w-[1600px] px-5 sm:px-8 lg:px-12;
+}
+
+/* Botones rectos, chicos y en versalita. */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-sm bg-ink px-8 py-3.5 text-[11px] font-medium uppercase tracking-editorial text-cream transition-colors duration-300 hover:bg-earth-600;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-sm border border-ink/20 bg-transparent px-8 py-3.5 text-[11px] font-medium uppercase tracking-editorial text-ink transition-colors duration-300 hover:border-ink hover:bg-ink hover:text-cream;
+}
+
+/* Superficie de contenido: blanca y prácticamente plana. */
+.card-surface {
+  @apply rounded-xl2 border border-warmgray-100 bg-white;
+}
+
+/* Rótulo pequeño que antecede a un título. */
+.eyebrow {
+  @apply text-[10px] uppercase tracking-editorial text-warmgray-500;
+}
+
+/* Logotipo de la marca: versalita muy espaciada, sin imagen. */
+.brand-wordmark {
+  @apply font-display font-normal uppercase tracking-brand;
+}
+
+/* Titular editorial de sección. */
+.title-editorial {
+  @apply font-display text-2xl font-light uppercase tracking-[0.12em] sm:text-3xl;
+}
+
+/* Línea de 1px del color del papel, no gris fuerte. */
+.hairline {
+  @apply border-warmgray-100;
+}
+
+/* Enlace de texto con subrayado que crece en hover. */
+.link-quiet {
+  @apply relative inline-block text-ink transition-colors duration-300 after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-ink after:transition-all after:duration-300 hover:after:w-full;
+}
+
+/* Inputs del sitio y del panel: una sola definición. */
+.field {
+  @apply w-full rounded-sm border border-warmgray-200 bg-white px-4 py-3 text-sm text-ink outline-none transition-colors duration-200 placeholder:text-warmgray-400 focus:border-ink;
+}
+
+.field-label {
+  @apply mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-warmgray-600;
+}
